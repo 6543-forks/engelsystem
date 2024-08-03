@@ -12,6 +12,7 @@ use Engelsystem\Models\Message;
 use Engelsystem\Models\News;
 use Engelsystem\Models\NewsComment;
 use Engelsystem\Models\OAuth;
+use Engelsystem\Models\Bezirk;
 use Engelsystem\Models\Privilege;
 use Engelsystem\Models\Question;
 use Engelsystem\Models\Session;
@@ -63,7 +64,7 @@ use Illuminate\Support\Collection as SupportCollection;
  * @property-read Collection|Message[]          $messages
  * @property-read Collection|Shift[]            $shiftsCreated
  * @property-read Collection|Shift[]            $shiftsUpdated
- *
+ * @property-read Bezirk|null                   $bezirk
  * @method static QueryBuilder|User[] whereId($value)
  * @method static QueryBuilder|User[] whereName($value)
  * @method static QueryBuilder|User[] whereEmail($value)
@@ -119,6 +120,11 @@ class User extends BaseModel
     public function groups(): BelongsToMany
     {
         return $this->belongsToMany(Group::class, 'users_groups');
+    }
+
+    public function bezirk(): HasOne
+    {
+        return $this->hasOne(Bezirk::class, 'login', 'name');
     }
 
     public function isFreeloader(): bool
@@ -279,17 +285,21 @@ class User extends BaseModel
 
     public function getDisplayNameAttribute(): string
     {
+        $displayName = $this->name;
+
         if (
             config('display_full_name')
             && !empty(trim($this->personalData->first_name . $this->personalData->last_name))
         ) {
-            return trim(
+            $displayName = trim(
                 trim((string) $this->personalData->first_name)
                 . ' ' .
                 trim((string) $this->personalData->last_name)
             );
         }
 
-        return $this->name;
+        $bezirk = $this->bezirk ? $this->bezirk->bezirk : null;
+
+        return $bezirk ? "{$displayName} ({$bezirk})" : $displayName;
     }
 }
